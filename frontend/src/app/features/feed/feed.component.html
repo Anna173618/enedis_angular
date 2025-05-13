@@ -17,7 +17,7 @@
             type="submit"
             [disabled]="postForm.invalid"
           >
-            Post
+            Post (test)
           </button>
         </ng-template>
       </form>
@@ -82,17 +82,13 @@
               <button
                 nz-button
                 nzType="text"
-                [ngClass]="{ 'liked': post.userHasLiked }"
+                [ngClass]="{ liked: post.userHasLiked }"
                 (click)="toggleLike(post)"
               >
                 <span nz-icon nzType="like" nzTheme="outline"></span>
                 Like
               </button>
-              <button
-                nz-button
-                nzType="text"
-                (click)="toggleComments(post)"
-              >
+              <button nz-button nzType="text" (click)="toggleComments(post)">
                 <span nz-icon nzType="comment" nzTheme="outline"></span>
                 Comment
               </button>
@@ -135,7 +131,9 @@
 
             <ng-template #commentTemplate let-comment>
               <nz-comment
-                [nzAuthor]="comment.user?.firstName + ' ' + comment.user?.lastName"
+                [nzAuthor]="
+                  comment.user?.firstName + ' ' + comment.user?.lastName
+                "
                 [nzDatetime]="formatDate(comment.createdAt)"
                 [nzAvatar]="getProfileImageUrl(comment.user!)"
               >
