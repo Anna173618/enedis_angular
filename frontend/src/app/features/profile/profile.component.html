@@ -1,0 +1,162 @@
+<div class="profile-container">
+  <nz-spin [nzSpinning]="isLoading">
+    <div *ngIf="profile" class="profile-header">
+      <div class="profile-cover"></div>
+      <div class="profile-info-container">
+        <div class="profile-info">
+          <div class="profile-avatar-wrapper">
+            <nz-avatar class="avatar-large" [nzSrc]="getProfileImageUrl()" [nzSize]="120"></nz-avatar>
+            
+            <div *ngIf="isCurrentUser" class="upload-button">
+              <nz-upload
+                [nzAction]="uploadUrl"
+                [nzHeaders]="getUploadHeaders()"
+                [nzName]="'file'"
+                [nzShowUploadList]="false"
+                (nzChange)="handleUploadSuccess($event)"
+                (nzError)="handleUploadError()"
+              >
+                <button nz-button nzType="primary" nzShape="circle">
+                  <span nz-icon nzType="camera"></span>
+                </button>
+              </nz-upload>
+            </div>
+          </div>
+          
+          <div class="profile-header-info">
+            <h2 class="profile-name">{{ profile.firstName }} {{ profile.lastName }}</h2>
+            <p class="profile-bio" *ngIf="profile.bio">{{ profile.bio }}</p>
+            <div class="profile-stats">
+              <div class="stat-item">
+                <span class="stat-value">{{ profile._count?.posts || 0 }}</span>
+                <span class="stat-label">Posts</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ profile._count?.followedBy || 0 }}</span>
+                <span class="stat-label">Followers</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ profile._count?.following || 0 }}</span>
+                <span class="stat-label">Following</span>
+              </div>
+            </div>
+            
+            <div class="profile-actions">
+              <button *ngIf="isCurrentUser" nz-button nzType="primary" class="btn-gradient" (click)="showEditModal()">
+                <span nz-icon nzType="edit"></span>
+                Edit Profile
+              </button>
+              
+              <ng-container *ngIf="!isCurrentUser">
+                <button *ngIf="!isFollowing" nz-button nzType="primary" class="btn-gradient" (click)="followUser()">
+                  <span nz-icon nzType="user-add"></span>
+                  Follow
+                </button>
+                <button *ngIf="isFollowing" nz-button nzType="default" (click)="unfollowUser()">
+                  <span nz-icon nzType="user-delete"></span>
+                  Unfollow
+                </button>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="profile-content">
+      <nz-tabset nzTabPosition="top" class="custom-tabs">
+        <nz-tab nzTitle="Posts">
+          <nz-spin [nzSpinning]="isLoadingPosts">
+            <div *ngIf="posts.length === 0 && !isLoadingPosts" class="empty-posts">
+              <nz-empty nzDescription="No posts yet">
+                <button *ngIf="isCurrentUser" nz-button nzType="primary" class="btn-gradient">
+                  <span nz-icon nzType="plus"></span>
+                  Create your first post
+                </button>
+              </nz-empty>
+            </div>
+            
+            <div *ngFor="let post of posts" class="post-card social-card">
+              <nz-card [nzBordered]="false">
+                <div class="post-header">
+                  <div class="user-info">
+                    <nz-avatar [nzSrc]="getProfileImageUrl()" nzSize="large"></nz-avatar>
+                    <div class="user-details">
+                      <span class="user-name">{{ profile?.firstName }} {{ profile?.lastName }}</span>
+                      <span class="post-time">{{ post.createdAt | date:'MMM d, y, h:mm a' }}</span>
+                    </div>
+                  </div>
+                  
+                  <button *ngIf="isCurrentUser" nz-dropdown [nzDropdownMenu]="menu" nzTrigger="click" nzPlacement="bottomRight" nz-button nzType="text" nzShape="circle">
+                    <span nz-icon nzType="ellipsis"></span>
+                  </button>
+                  <nz-dropdown-menu #menu="nzDropdownMenu">
+                    <ul nz-menu>
+                      <li nz-menu-item>
+                        <span nz-icon nzType="edit"></span>
+                        Edit post
+                      </li>
+                      <li nz-menu-item nzDanger>
+                        <span nz-icon nzType="delete"></span>
+                        Delete post
+                      </li>
+                    </ul>
+                  </nz-dropdown-menu>
+                </div>
+                
+                <div class="post-content">
+                  <p>{{ post.content }}</p>
+                </div>
+                
+                <div class="post-actions">
+                  <button nz-button nzType="text">
+                    <span nz-icon nzType="like" nzTheme="outline"></span>
+                    Like <span *ngIf="post._count?.likes">({{ post._count?.likes }})</span>
+                  </button>
+                  <button nz-button nzType="text">
+                    <span nz-icon nzType="comment" nzTheme="outline"></span>
+                    Comment <span *ngIf="post._count?.comments">({{ post._count?.comments }})</span>
+                  </button>
+                  <button nz-button nzType="text">
+                    <span nz-icon nzType="share-alt" nzTheme="outline"></span>
+                    Share
+                  </button>
+                </div>
+              </nz-card>
+            </div>
+          </nz-spin>
+        </nz-tab>
+      </nz-tabset>
+    </div>
+  </nz-spin>
+  
+  <nz-modal [(nzVisible)]="isEditModalVisible" nzTitle="Edit Profile" (nzOnCancel)="handleCancel()" (nzOnOk)="submitEditForm()">
+    <div *ngIf="profile">
+      <!-- Debug section to verify values are loaded -->
+      <p style="margin-bottom: 16px;">Debug - Current values: {{profile.firstName}} {{profile.lastName}}</p>
+      
+      
+      <form nz-form [formGroup]="editForm">
+        <nz-form-item>
+          <nz-form-label nzFor="firstName">First Name</nz-form-label>
+          <nz-form-control nzErrorTip="Please input your first name!">
+            <input nz-input id="firstName" formControlName="firstName"/>
+          </nz-form-control>
+        </nz-form-item>
+        
+        <nz-form-item>
+          <nz-form-label nzFor="lastName">Last Name</nz-form-label>
+          <nz-form-control nzErrorTip="Please input your last name!">
+            <input nz-input id="lastName" formControlName="lastName"/>
+          </nz-form-control>
+        </nz-form-item>
+        
+        <nz-form-item>
+          <nz-form-label nzFor="bio">Bio</nz-form-label>
+          <nz-form-control>
+            <textarea nz-input id="bio" formControlName="bio" [nzAutosize]="{ minRows: 3, maxRows: 5 }"></textarea>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </div>
+  </nz-modal>
